@@ -1,0 +1,6 @@
+1. Arm/m1
+
+docker-compose -p docker-apisix -f docker-compose-arm64.yml up -d
+
+2. Jika plugin tidak muncul di dashboard apisix, copy file schema.json ke dalam folder docker
+apisix dashboard usr/local/apisixdashboard/conf
