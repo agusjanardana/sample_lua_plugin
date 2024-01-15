@@ -6,14 +6,11 @@ local log_util  = require("apisix.utils.log-util")
 local core      = require("apisix.core")
 local http      = require "resty.http"
 local ngx       = ngx
-local bp_manager_mod  = require("apisix.utils.batch-processor-manager")
 
 -- local function
 
 -- module define
 local plugin_name = "redis_session_log"
-local batch_processor_manager = bp_manager_mod.new("http logger")
-
 
 -- plugin schema
 local plugin_schema = {
@@ -36,12 +33,21 @@ local function extract_session_id(xml_string)
     local pattern = "<GetSessionIdResponse[^>]*>(.-)</GetSessionIdResponse>"
 
     -- Lakukan pencocokan dengan ekspresi regular
-    local session_id = string.match(xml_string, pattern)
+    local data = string.match(xml_string, pattern)
+
+    local patternSessionId = "<sessionId>(.-)</sessionId>"
+    local patternClientId = "<clientId>(.-)</clientId>"
 
     -- Cetak hasil
-    if session_id then
-        ngx.log(ngx.INFO, "Session ID: ", session_id)
-        return session_id
+    if data then
+        ngx.log(ngx.INFO, "Session ID: ", data)
+        local returnData = {
+            session_id = string.match(data, patternSessionId),
+            client_id = string.match(data, patternClientId)
+        }
+
+        core.log.warn(returnData.client_id)
+        return returnData
     else
         ngx.log(ngx.ERR, "Failed to extract Session ID from XML response")
         return nil
@@ -58,6 +64,7 @@ end
 -- end
 
 local bodySession
+local clientId
 
 function _M.body_filter(conf, ctx)
     core.log.warn("Fase Content filter")
@@ -70,9 +77,13 @@ function _M.body_filter(conf, ctx)
     ngx.arg[2] = true
    
     -- Extract and store session ID in shared memory dictionary
-    local sessionid = extract_session_id(ngx.arg[1])
-    bodySession = sessionid
-    core.log.warn(bodySession)
+    local data = extract_session_id(ngx.arg[1])
+    if data then 
+        bodySession = data.session_id
+        clientId = data.client_id
+    else 
+        core.log.warn("Failed to extract Session ID from XML response")
+    end
 end
 
 function _M.log(conf, ctx)
@@ -96,7 +107,8 @@ function _M.log(conf, ctx)
     
     local function save_redis()
         local redis_cli = redis_client()
-        redis_cli:set("NEW-1234567",  bodySession)
+        redis_cli:set(clientId,  bodySession)
+        redis_cli:expire(clientId, 50)
     end
     
     ngx.timer.at(0, save_redis)
