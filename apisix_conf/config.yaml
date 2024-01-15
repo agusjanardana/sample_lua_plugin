@@ -61,6 +61,7 @@ plugins:                           # plugin list (sorted by priority)
   - redis_get_session               # priority: 300
   - redis_save_session              # priority: 200
   - redis_transform_body_response   # priority: 100
+  - redis_session_log
 
 
 plugin_attr:
