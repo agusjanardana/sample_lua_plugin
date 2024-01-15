@@ -1,1 +1,2 @@
 ./etcd_data/wal/*
+./etcd_data/member*
