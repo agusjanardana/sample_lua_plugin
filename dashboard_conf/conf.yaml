@@ -114,3 +114,4 @@ plugins:                          # plugin list (sorted in alphabetical order)
   - redis_save_session              
   - redis_get_session               
   - redis_session_log
+  - redis_session_management

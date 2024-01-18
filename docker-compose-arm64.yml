@@ -37,6 +37,7 @@ services:
       - ./custom_plugins/redis_transform_body_response.lua:/usr/local/apisix/apisix/plugins/redis_transform_body_response.lua
       - ./custom_plugins/redis_get_session.lua:/usr/local/apisix/apisix/plugins/redis_get_session.lua
       - ./custom_plugins/redis_session_log.lua:/usr/local/apisix/apisix/plugins/redis_session_log.lua
+      - ./custom_plugins/redis_session_management.lua:/usr/local/apisix/apisix/plugins/redis_session_management.lua
     depends_on:
       - etcd
     ports:

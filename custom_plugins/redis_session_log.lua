@@ -40,7 +40,6 @@ local function extract_session_id(xml_string)
 
     -- Cetak hasil
     if data then
-        ngx.log(ngx.INFO, "Session ID: ", data)
         local returnData = {
             session_id = string.match(data, patternSessionId),
             client_id = string.match(data, patternClientId)
@@ -65,13 +64,14 @@ end
 
 local bodySession
 local clientId
+local location
 
 function _M.body_filter(conf, ctx)
-    core.log.warn("Fase Content filter")
     local body = core.response.hold_body_chunk(ctx)
     if not body then
-        return core.log.warn("failed to hold response body chunk")
+        return ngx.log(ngx.NOTICE, "processing body")
     end
+
 
     ngx.arg[1] = body
     ngx.arg[2] = true
@@ -84,6 +84,26 @@ function _M.body_filter(conf, ctx)
     else 
         core.log.warn("Failed to extract Session ID from XML response")
     end
+
+
+    -- extract header
+    local h, err = ngx.resp.get_headers()
+    if err == "truncated" then
+        -- one can choose to ignore or reject the current response here
+        core.log.warn("truncated response headers from ", ngx.var.upstream_addr)
+    end
+
+    for k, v in pairs(h) do
+        if k == "location" then
+            location = v
+        end
+    end
+    if not location then
+        core.log.warn("failed to get Location header")
+        return
+    end
+
+    core.log.warn("Location: ", location)
 end
 
 function _M.log(conf, ctx)
